@@ -3,6 +3,7 @@ import HomePage from "./pages/HomePage";
 import LogIn from './pages/LogIn';
 import SignUp from './pages/SignUp';
 import Profile from './pages/Profile';
+import MyVenue from './pages/MyVenue';
 
 const App = () => {
   return ( 
@@ -12,6 +13,7 @@ const App = () => {
         <Route path="/login" element={<LogIn />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/my-venues" element={<MyVenue />} />
       </Routes>
     </Router>
   );
