@@ -104,7 +104,7 @@ const HomePage = () => {
                     handleLogout();
                     setMenuOpen(false);
                   }}
-                  className="bg-accent hover:bg-accent/80 text-dominant py-1 px-4 rounded-md"
+                  className="bg-accent hover:cursor-pointer text-dominant py-1 px-4 rounded-md"
                 >
                   Logout
                 </button>
