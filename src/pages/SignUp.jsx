@@ -50,7 +50,17 @@ const Signup = () => {
       if (err instanceof z.ZodError) {
         setError(err.errors[0].message);
       } else {
-        setError('An error occurred during signup');
+        if (err.code === "auth/email-already-in-use") {
+          setError("The given email is already in use!");
+        } else if (err.code === "auth/network-request-failed") {
+          setError("Check your internet connection and try again!");
+        } else if (err.code === "auth/weak-password") {
+          setError("The password is too weak!");
+        } else if (err.code === "auth/invalid-email") {
+          setError("The email address is invalid!");
+        } else {
+          setError("Error: " + (err.message || err.code));
+        }
       }
     }
   };
@@ -58,7 +68,7 @@ const Signup = () => {
   return (
     <div className="flex justify-center items-center min-h-screen bg-dominant px-4 sm:px-6 lg:px-8">
       <div className="w-full my-10 max-w-md p-8 bg-accent shadow-xl rounded-lg">
-        <h2 className="text-3xl font-semibold text-dominant mb-6 text-center">Sign Up</h2>
+        <h2 className="text-2xl font-bold text-dominant mb-6 text-center">Sign Up</h2>
         
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
@@ -67,10 +77,11 @@ const Signup = () => {
             <label className="block text-sm font-medium text-dominant">Name</label>
             <input
               type="text"
-              className="w-full p-3 border border-dominant rounded-md focus:ring-2 focus:ring-highlight focus:outline-none text-dominant"
+              className="w-full p-3 border border-dominant rounded-md focus:ring-2 focus:outline-none text-dominant"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
+              placeholder="Enter your full name"
             />
           </div>
 
@@ -78,17 +89,18 @@ const Signup = () => {
             <label className="block text-sm font-medium text-dominant">Phone Number</label>
             <input
               type="text"
-              className="w-full p-3 border border-dominant rounded-md focus:ring-2 focus:ring-highlight focus:outline-none text-dominant"
+              className="w-full p-3 border border-dominant rounded-md focus:ring-2 focus:outline-none text-dominant"
               value={number}
               onChange={(e) => setNumber(e.target.value)}
               required
+              placeholder="Enter your phone number"
             />
           </div>
 
           <div className="mb-4">
             <label className="block text-sm font-medium text-dominant">Role</label>
             <select
-              className="w-full p-3 border border-dominant rounded-md focus:ring-2 focus:ring-highlight focus:outline-none text-dominant"
+              className="w-full p-3 border border-dominant rounded-md focus:ring-2 focus:outline-none text-dominant"
               value={role}
               onChange={(e) => setRole(e.target.value)}
               required
@@ -102,10 +114,11 @@ const Signup = () => {
             <label className="block text-sm font-medium text-dominant">Email</label>
             <input
               type="email"
-              className="w-full p-3 border border-dominant rounded-md focus:ring-2 focus:ring-highlight focus:outline-none text-dominant"
+              className="w-full p-3 border border-dominant rounded-md focus:ring-2 focus:outline-none text-dominant"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              placeholder="example@example.com"
             />
           </div>
 
@@ -113,10 +126,11 @@ const Signup = () => {
             <label className="block text-sm font-medium text-dominant">Password</label>
             <input
               type="password"
-              className="w-full p-3 border border-dominant rounded-md focus:ring-2 focus:ring-highlight focus:outline-none text-dominant"
+              className="w-full p-3 border border-dominant rounded-md focus:ring-2 focus:outline-none text-dominant"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              placeholder="Enter a secure password"
             />
           </div>
 
@@ -130,7 +144,7 @@ const Signup = () => {
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-600">
-          Already have an account? <a href="/login" className="text-highlight font-semibold">Login here</a>
+          Already have an account? <a href="/login" className="text-highlight font-semibold hover:underline">Login here</a>
         </p>
       </div>
     </div>
