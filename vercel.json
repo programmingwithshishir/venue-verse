@@ -1,14 +1,4 @@
 {
-    "builds": [
-      {
-        "src": "frontend/dist/**/*",
-        "use": "@vercel/static"
-      },
-      {
-        "src": "frontend/package.json",
-        "use": "@vercel/node"
-      }
-    ],
     "rewrites": [
       { "source": "/(.*)", "destination": "/index.html" }
     ]
