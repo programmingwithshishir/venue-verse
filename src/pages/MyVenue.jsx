@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, addDoc, query, where, doc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, where, doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -9,6 +9,7 @@ const MyVenuePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
+  const [isSeller, setIsSeller] = useState(false);
   const [authInitialized, setAuthInitialized] = useState(false);
   const [venueToDelete, setVenueToDelete] = useState(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -34,33 +35,60 @@ const MyVenuePage = () => {
   const [price, setPrice] = useState('');
   const [formErrors, setFormErrors] = useState({});
 
+  // Check authentication and seller role
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      
+      if (currentUser) {
+        // Check if user is a seller by fetching their profile from Firestore
+        try {
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setIsSeller(userData.role === 'seller');
+          } else {
+            setIsSeller(false);
+          }
+        } catch (err) {
+          console.error('Error checking seller status:', err);
+          setIsSeller(false);
+        }
+      } else {
+        setIsSeller(false);
+      }
+      
       setAuthInitialized(true);
     });
+    
     return () => unsubscribe();
   }, []);
 
-  // Only fetch venues after auth is initialized and user is logged in
+  // Only fetch venues after auth is initialized and user is a seller
   useEffect(() => {
     if (authInitialized) {
-      if (user) {
+      if (user && isSeller) {
         fetchVenues();
+      } else if (user && !isSeller) {
+        // Handle authenticated but not seller case
+        setIsLoading(false);
+        setError('Only sellers can access this page');
       } else {
         // Handle not authenticated case
         setIsLoading(false);
         setError('Please log in to view your venues');
       }
     }
-  }, [authInitialized, user]);
+  }, [authInitialized, user, isSeller]);
 
   const fetchVenues = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // We already know user exists at this point
+      // We already know user exists and is a seller at this point
       const venuesRef = collection(db, 'venues');
       const q = query(venuesRef, where('userId', '==', user.uid));
       const querySnapshot = await getDocs(q);
@@ -132,8 +160,8 @@ const MyVenuePage = () => {
     }
     
     try {
-      if (!user) {
-        throw new Error('User not authenticated');
+      if (!user || !isSeller) {
+        throw new Error('User not authenticated or not a seller');
       }
       
       const selectedDays = Object.entries(openDays)
@@ -222,6 +250,24 @@ const MyVenuePage = () => {
     }));
   };
 
+  // Show not a seller message
+  if (authInitialized && user && !isSeller) {
+    return (
+      <div className="container mx-auto px-4 py-16">
+        <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-8 text-center">
+          <h2 className="text-2xl font-bold text-dominant mb-4">Seller Access Required</h2>
+          <p className="text-gray-600 mb-6">This page is only accessible to sellers. Please upgrade your account to a seller account to manage venues.</p>
+          <button
+            onClick={() => window.location.href = '/profile'}
+            className="bg-highlight hover:cursor-pointer text-white py-2 px-6 rounded-lg transition duration-300"
+          >
+            Go to Profile
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Show auth redirect UI if not logged in
   if (authInitialized && !user) {
     return (
@@ -247,14 +293,14 @@ const MyVenuePage = () => {
         {!isAddingVenue && (
           <button
             onClick={() => setIsAddingVenue(true)}
-            className="bg-highlight hover:bg-highlight/90 text-white py-2 px-4 rounded-lg transition duration-300"
+            className="bg-highlight hover:cursor-pointer text-white py-2 px-4 rounded-lg transition duration-300"
           >
             Add New Venue
           </button>
         )}
       </div>
 
-      {error && error !== 'Please log in to view your venues' && (
+      {error && error !== 'Please log in to view your venues' && error !== 'Only sellers can access this page' && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
         </div>
@@ -375,7 +421,7 @@ const MyVenuePage = () => {
                       key={day}
                       type="button"
                       onClick={() => handleDayToggle(day)}
-                      className={`px-3 py-1 rounded-full text-sm ${
+                      className={`px-3 py-1 rounded-full text-sm hover:cursor-pointer ${
                         isChecked
                           ? 'bg-accent text-white'
                           : 'bg-gray-200 text-gray-700'
@@ -402,9 +448,9 @@ const MyVenuePage = () => {
                       id="ac"
                       checked={hasAC}
                       onChange={() => setHasAC(!hasAC)}
-                      className="h-4 w-4 text-highlight"
+                      className="h-4 w-4 text-highlight hover:cursor-pointer"
                     />
-                    <label htmlFor="ac" className="ml-2 text-sm text-gray-700">
+                    <label htmlFor="ac" className="ml-2 text-sm text-gray-700 hover:cursor-pointer">
                       Air Conditioning
                     </label>
                   </div>
@@ -414,9 +460,9 @@ const MyVenuePage = () => {
                       id="sound"
                       checked={hasSoundSystem}
                       onChange={() => setHasSoundSystem(!hasSoundSystem)}
-                      className="h-4 w-4 text-highlight"
+                      className="h-4 w-4 text-highlight hover:cursor-pointer"
                     />
-                    <label htmlFor="sound" className="ml-2 text-sm text-gray-700">
+                    <label htmlFor="sound" className="ml-2 text-sm text-gray-700 hover:cursor-pointer">
                       Sound System
                     </label>
                   </div>
@@ -426,9 +472,9 @@ const MyVenuePage = () => {
                       id="food"
                       checked={hasFoodCourt}
                       onChange={() => setHasFoodCourt(!hasFoodCourt)}
-                      className="h-4 w-4 text-highlight"
+                      className="h-4 w-4 text-highlight hover:cursor-pointer"
                     />
-                    <label htmlFor="food" className="ml-2 text-sm text-gray-700">
+                    <label htmlFor="food" className="ml-2 text-sm text-gray-700 hover:cursor-pointer">
                       Food Court
                     </label>
                   </div>
@@ -482,13 +528,13 @@ const MyVenuePage = () => {
                   resetForm();
                   setIsAddingVenue(false);
                 }}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg transition duration-300"
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg transition duration-300 hover:cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="bg-highlight hover:bg-highlight/90 text-white py-2 px-4 rounded-lg transition duration-300"
+                className="bg-highlight hover:cursor-pointer text-white py-2 px-4 rounded-lg transition duration-300"
               >
                 Add Venue
               </button>
@@ -501,7 +547,7 @@ const MyVenuePage = () => {
           <p className="text-gray-500 mb-4">You haven't added any venues yet.</p>
           <button
             onClick={() => setIsAddingVenue(true)}
-            className="bg-highlight hover:bg-highlight/90 text-white py-2 px-4 rounded-lg transition duration-300"
+            className="bg-highlight hover:cursor-pointer text-white py-2 px-4 rounded-lg transition duration-300"
           >
             Add Your First Venue
           </button>
@@ -517,7 +563,7 @@ const MyVenuePage = () => {
                   className="text-white hover:text-red-200 transition-colors"
                   aria-label="Delete venue"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 hover:cursor-pointer" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
                 </button>
