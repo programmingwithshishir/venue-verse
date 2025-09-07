@@ -30,7 +30,7 @@ Clone the repository and get started!
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/your-username/venue-verse.git
+git clone https://github.com/programmingwithshishir/venue-verse.git
 cd venue-verse
 
 # 2. Install dependencies
@@ -38,7 +38,7 @@ npm install
 
 # 3. Start the development server
 npm run dev
-
+```
 
 # React + Vite
 
